@@ -231,6 +231,21 @@
     color: var(--muted-soft);
   }
 
+  .post-thumb-wrap {
+    width: 100%;
+    aspect-ratio: 16 / 10;
+    border-radius: 11px;
+    overflow: hidden;
+    background: var(--bg-soft);
+    margin-bottom: 12px;
+  }
+  .post-thumb {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
   .fab {
     -webkit-tap-highlight-color: transparent;
     position: absolute;
@@ -259,14 +274,35 @@
     align-items: center;
     justify-content: center;
     position: relative;
-    padding: calc(18px + env(safe-area-inset-top)) 16px 12px;
+    padding: calc(18px + env(safe-area-inset-top)) 48px 12px;
     flex-shrink: 0;
   }
   .detail-header .icon-btn { position: absolute; left: 12px; }
+  .detail-header .delete-btn { left: auto; right: 12px; color: var(--muted); }
+  .detail-header .delete-btn:hover { color: var(--mark); }
   .detail-date {
-    font-size: 16px;
+    font-size: 15px;
     font-weight: 700;
     font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+  }
+
+  .detail-image-wrap {
+    width: 100%;
+    border-radius: 16px;
+    overflow: hidden;
+    background: var(--bg-soft);
+    margin-bottom: 16px;
+    box-shadow: var(--shadow);
+  }
+  .detail-image {
+    width: 100%;
+    max-height: 60vh;
+    object-fit: cover;
+    display: block;
   }
 
   #view-detail .scroll {
@@ -396,6 +432,63 @@
     padding: 8px 20px 20px;
     display: flex;
   }
+
+  .compose-attach-bar {
+    flex-shrink: 0;
+    padding: 0 20px 10px;
+  }
+  .attach-btn {
+    -webkit-tap-highlight-color: transparent;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    font-family: inherit;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--muted);
+    background: none;
+    border: 1px dashed var(--card-border);
+    border-radius: 20px;
+    padding: 8px 14px;
+    cursor: pointer;
+    transition: color 0.15s ease, border-color 0.15s ease;
+  }
+  .attach-btn:hover { color: var(--accent); border-color: var(--accent); }
+  .attach-btn svg { width: 16px; height: 16px; flex-shrink: 0; }
+
+  .compose-image-preview {
+    position: relative;
+    display: inline-block;
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: var(--shadow);
+  }
+  .compose-image-preview img {
+    display: block;
+    max-height: 140px;
+    max-width: 100%;
+    object-fit: cover;
+  }
+  .remove-image-btn {
+    -webkit-tap-highlight-color: transparent;
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(20,18,12,0.55);
+    color: #fff;
+    font-size: 15px;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+  }
+  .remove-image-btn:hover { background: rgba(20,18,12,0.75); }
+
   .compose-date {
     font-size: 12.5px;
     color: var(--muted);
@@ -477,8 +570,14 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 19l-7-7 7-7"/></svg>
       </button>
       <div class="detail-date" id="detail-date"></div>
+      <button class="icon-btn delete-btn" id="detail-delete" aria-label="글 삭제">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2m-8 0v13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V7"/></svg>
+      </button>
     </div>
     <div class="scroll">
+      <div class="detail-image-wrap" id="detail-image-wrap" hidden>
+        <img class="detail-image" id="detail-image-img" alt="">
+      </div>
       <div class="origin-card" id="detail-body"></div>
       <div class="timeline" id="detail-timeline"></div>
       <div class="timeline-empty" id="timeline-empty" hidden>아직 남긴 댓글이 없어요.</div>
@@ -497,6 +596,17 @@
       </button>
       <div class="compose-title">새 글</div>
       <button class="text-btn" id="compose-submit" disabled>게시</button>
+    </div>
+    <div class="compose-attach-bar">
+      <input type="file" id="compose-image-input" accept="image/*" hidden>
+      <button type="button" class="attach-btn" id="attach-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2.5"/><circle cx="9" cy="10.5" r="1.7"/><path d="M21 16l-5.5-5.5a1.5 1.5 0 0 0-2.1 0L5 19"/></svg>
+        사진 추가
+      </button>
+      <div class="compose-image-preview" id="compose-image-preview" hidden>
+        <img id="compose-image-thumb" alt="">
+        <button type="button" class="remove-image-btn" id="remove-image-btn" aria-label="사진 제거">×</button>
+      </div>
     </div>
     <div class="scroll">
       <div class="compose-area">
@@ -542,12 +652,91 @@
   }
   var posts = loadPosts();
 
+  /* ---------- image storage (IndexedDB) ---------- */
+  var IDB_NAME = "mushroom_db";
+  var IDB_STORE = "images";
+
+  function idbOpen() {
+    return new Promise(function (resolve, reject) {
+      var req = indexedDB.open(IDB_NAME, 1);
+      req.onupgradeneeded = function () {
+        req.result.createObjectStore(IDB_STORE, { keyPath: "id" });
+      };
+      req.onsuccess = function () { resolve(req.result); };
+      req.onerror = function () { reject(req.error); };
+    });
+  }
+  function idbSetImage(id, dataUrl) {
+    return idbOpen().then(function (db) {
+      return new Promise(function (resolve, reject) {
+        var tx = db.transaction(IDB_STORE, "readwrite");
+        tx.objectStore(IDB_STORE).put({ id: id, dataUrl: dataUrl });
+        tx.oncomplete = function () { resolve(); };
+        tx.onerror = function () { reject(tx.error); };
+      });
+    });
+  }
+  function idbGetImage(id) {
+    return idbOpen().then(function (db) {
+      return new Promise(function (resolve, reject) {
+        var tx = db.transaction(IDB_STORE, "readonly");
+        var req = tx.objectStore(IDB_STORE).get(id);
+        req.onsuccess = function () { resolve(req.result ? req.result.dataUrl : null); };
+        req.onerror = function () { reject(req.error); };
+      });
+    });
+  }
+  function idbDeleteImage(id) {
+    return idbOpen().then(function (db) {
+      return new Promise(function (resolve, reject) {
+        var tx = db.transaction(IDB_STORE, "readwrite");
+        tx.objectStore(IDB_STORE).delete(id);
+        tx.oncomplete = function () { resolve(); };
+        tx.onerror = function () { reject(tx.error); };
+      });
+    });
+  }
+
+  function compressImageFile(file) {
+    return new Promise(function (resolve, reject) {
+      var reader = new FileReader();
+      reader.onload = function () { resolve(reader.result); };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    }).then(function (dataUrl) {
+      return new Promise(function (resolve, reject) {
+        var img = new Image();
+        img.onload = function () {
+          var maxSide = 1600;
+          var w = img.width, h = img.height;
+          if (w > maxSide || h > maxSide) {
+            if (w > h) { h = Math.round(h * maxSide / w); w = maxSide; }
+            else { w = Math.round(w * maxSide / h); h = maxSide; }
+          }
+          var canvas = document.createElement("canvas");
+          canvas.width = w; canvas.height = h;
+          canvas.getContext("2d").drawImage(img, 0, 0, w, h);
+          resolve(canvas.toDataURL("image/jpeg", 0.78));
+        };
+        img.onerror = reject;
+        img.src = dataUrl;
+      });
+    });
+  }
+
   function uid() {
     return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
   }
   function fmtDate(iso) {
     var d = new Date(iso);
-    return d.getFullYear() + ". " + (d.getMonth() + 1) + ". " + d.getDate() + ".";
+    var dateStr = d.getFullYear() + ". " + (d.getMonth() + 1) + ". " + d.getDate() + ".";
+    var h = d.getHours();
+    var m = d.getMinutes();
+    var period = h < 12 ? "오전" : "오후";
+    var h12 = h % 12;
+    if (h12 === 0) h12 = 12;
+    var mm = m < 10 ? "0" + m : String(m);
+    return dateStr + " " + period + " " + h12 + ":" + mm;
   }
 
   /* ---------- view switching ---------- */
@@ -579,6 +768,19 @@
       card.className = "post-card";
       card.type = "button";
 
+      if (post.hasImage) {
+        var thumbWrap = document.createElement("div");
+        thumbWrap.className = "post-thumb-wrap";
+        var thumbImg = document.createElement("img");
+        thumbImg.className = "post-thumb";
+        thumbImg.alt = "";
+        thumbWrap.appendChild(thumbImg);
+        card.appendChild(thumbWrap);
+        idbGetImage(post.id).then(function (thumbImg) {
+          return function (url) { if (url) thumbImg.src = url; };
+        }(thumbImg));
+      }
+
       var dateEl = document.createElement("div");
       dateEl.className = "post-date";
       dateEl.textContent = fmtDate(post.date);
@@ -607,6 +809,8 @@
   /* ---------- detail rendering ---------- */
   var detailDate = document.getElementById("detail-date");
   var detailBody = document.getElementById("detail-body");
+  var detailImageWrap = document.getElementById("detail-image-wrap");
+  var detailImageImg = document.getElementById("detail-image-img");
   var detailTimeline = document.getElementById("detail-timeline");
   var timelineEmpty = document.getElementById("timeline-empty");
   var commentInput = document.getElementById("comment-input");
@@ -631,6 +835,15 @@
     if (!post) { showView("feed"); return; }
     detailDate.textContent = fmtDate(post.date);
     detailBody.textContent = post.body;
+
+    if (post.hasImage) {
+      detailImageWrap.hidden = false;
+      detailImageImg.src = "";
+      idbGetImage(post.id).then(function (url) { if (url) detailImageImg.src = url; });
+    } else {
+      detailImageWrap.hidden = true;
+      detailImageImg.src = "";
+    }
 
     detailTimeline.innerHTML = "";
     timelineEmpty.hidden = post.comments.length !== 0;
@@ -664,6 +877,20 @@
     showView("feed");
   });
 
+  document.getElementById("detail-delete").addEventListener("click", function () {
+    var post = findPost(activePostId);
+    if (!post) return;
+    var ok = window.confirm("이 글을 삭제할까요? 댓글도 함께 삭제됩니다.");
+    if (!ok) return;
+    posts = posts.filter(function (p) { return p.id !== post.id; });
+    savePosts(posts);
+    if (post.hasImage) {
+      idbDeleteImage(post.id).catch(function () {});
+    }
+    renderFeed();
+    showView("feed");
+  });
+
   commentInput.addEventListener("input", function () {
     commentSubmit.disabled = commentInput.value.trim().length === 0;
   });
@@ -683,11 +910,25 @@
   var composeDate = document.getElementById("compose-date");
   var composeTextarea = document.getElementById("compose-textarea");
   var composeSubmit = document.getElementById("compose-submit");
+  var attachBtn = document.getElementById("attach-btn");
+  var composeImageInput = document.getElementById("compose-image-input");
+  var composeImagePreview = document.getElementById("compose-image-preview");
+  var composeImageThumb = document.getElementById("compose-image-thumb");
+  var removeImageBtn = document.getElementById("remove-image-btn");
+  var pendingImage = null;
+
+  function resetComposeImage() {
+    pendingImage = null;
+    composeImageThumb.src = "";
+    composeImagePreview.hidden = true;
+    attachBtn.hidden = false;
+  }
 
   function openCompose() {
     composeDate.textContent = fmtDate(new Date().toISOString());
     composeTextarea.value = "";
     composeSubmit.disabled = true;
+    resetComposeImage();
     showView("compose");
     setTimeout(function () { composeTextarea.focus(); }, 50);
   }
@@ -699,12 +940,35 @@
   composeTextarea.addEventListener("input", function () {
     composeSubmit.disabled = composeTextarea.value.trim().length === 0;
   });
-  composeSubmit.addEventListener("click", function () {
+
+  attachBtn.addEventListener("click", function () {
+    composeImageInput.click();
+  });
+  composeImageInput.addEventListener("change", function () {
+    var file = composeImageInput.files[0];
+    composeImageInput.value = "";
+    if (!file) return;
+    compressImageFile(file).then(function (dataUrl) {
+      pendingImage = dataUrl;
+      composeImageThumb.src = dataUrl;
+      composeImagePreview.hidden = false;
+      attachBtn.hidden = true;
+    });
+  });
+  removeImageBtn.addEventListener("click", function () {
+    resetComposeImage();
+  });
+
+  composeSubmit.addEventListener("click", async function () {
     var text = composeTextarea.value.trim();
     if (!text) return;
-    var post = { id: uid(), date: new Date().toISOString(), body: text, comments: [] };
+    var post = { id: uid(), date: new Date().toISOString(), body: text, comments: [], hasImage: !!pendingImage };
+    var imageToSave = pendingImage;
     posts.push(post);
     savePosts(posts);
+    if (imageToSave) {
+      await idbSetImage(post.id, imageToSave);
+    }
     renderFeed();
     feedScroll.scrollTop = 0;
     showView("feed");
